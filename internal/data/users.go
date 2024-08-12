@@ -21,7 +21,6 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
-	// Password  password  `json:"-"`
 	Activated bool      `json:"activated"`
 	Version   int       `json:"-"`
 }
@@ -143,7 +142,6 @@ func (m UserModel) GetByUserId(userId int64) (*User, error) {
 	return &user, nil
 }
 
-
 func (m UserModel) Update(user *User) error {
 	query := `
 		UPDATE users
@@ -176,7 +174,6 @@ func (m UserModel) Update(user *User) error {
 
 	return nil
 }
-
 
 func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (int64, error) {
 

@@ -2,7 +2,6 @@ package data
 
 import "github.com/saarwasserman/users/internal/validator"
 
-
 const (
 	ScopeActivation     = "activation"
 	ScopeAuthentication = "authentication"

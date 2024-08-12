@@ -15,19 +15,18 @@ import (
 	"github.com/saarwasserman/users/protogen/users"
 )
 
-
 func (app *application) RegisterUser(ctx context.Context, req *users.UserRegisterRequest) (*users.UserDetailsResponse, error) {
 	user := &data.User{
 		Name:      req.Name,
 		Email:     req.Email,
 		Activated: false,
 	}
-	
+
 	v := validator.New()
 
 	data.ValidatePlaintextPassword(v, req.Password)
-	data.ValidateUser(v, user);
-	
+	data.ValidateUser(v, user)
+
 	if !v.Valid() {
 		return nil, status.Errorf(codes.InvalidArgument, "error %s", v.Errors)
 	}
@@ -44,24 +43,24 @@ func (app *application) RegisterUser(ctx context.Context, req *users.UserRegiste
 	}
 
 	_, err = app.auth.SetPassword(ctx, &auth.SetPasswordRequest{
-		UserId: user.ID,
+		UserId:   user.ID,
 		Password: req.Password,
 	})
 	if err != nil {
-		return  nil, status.Error(codes.Internal, "failed to set initial password")
+		return nil, status.Error(codes.Internal, "failed to set initial password")
 	}
 
 	// add initial permission
 	_, err = app.auth.AddPermissionForUser(ctx, &auth.AddPermissionForUserRequest{
 		UserId: user.ID,
-		Codes: []string{"movies:read"},
-	})    
+		Codes:  []string{"movies:read"},
+	})
 	if err != nil {
-		return  nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	tokenResponse, err := app.auth.CreateToken(ctx, &auth.TokenCreationRequest{
-		Scope: data.ScopeActivation,
+		Scope:  data.ScopeActivation,
 		UserId: user.ID,
 	})
 	if err != nil {
@@ -96,9 +95,9 @@ func (app *application) ActivateUser(ctx context.Context, req *users.UserActivat
 	}
 
 	authRes, err := app.auth.Authenticate(ctx, &auth.AuthenticationRequest{
-		TokenScope: data.ScopeActivation,
+		TokenScope:     data.ScopeActivation,
 		TokenPlaintext: req.TokenPlaintext,
-	}, )
+	})
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -161,14 +160,13 @@ func (app *application) GetUser(ctx context.Context, req *users.UserDetailsReque
 	}
 
 	return &users.UserDetailsResponse{
-		Id:       user.ID,
-		Email:    user.Email,
+		Id:        user.ID,
+		Email:     user.Email,
 		Name:      user.Name,
 		CreatedAt: user.CreatedAt.UnixMilli(),
 		Activated: user.Activated,
 	}, nil
 }
-    
 
 func (app *application) Login(ctx context.Context, req *users.LoginRequest) (*users.LoginResponse, error) {
 	user, err := app.models.Users.GetByEmail(req.Email)
@@ -179,7 +177,7 @@ func (app *application) Login(ctx context.Context, req *users.LoginRequest) (*us
 
 	tokenResponse, err := app.auth.CreateToken(ctx, &auth.TokenCreationRequest{
 		UserId: user.ID,
-		Scope: data.ScopeAuthentication,
+		Scope:  data.ScopeAuthentication,
 	})
 	if err != nil {
 		app.logger.PrintError(err, nil)
@@ -196,7 +194,7 @@ func (app *application) Logout(ctx context.Context, req *users.LogoutRequest) (*
 	userId := app.contextGetUserId(ctx)
 
 	_, err := app.auth.DeleteAllTokensForUser(ctx, &auth.TokensDeletionRequest{
-		Scope: data.ScopeAuthentication,
+		Scope:  data.ScopeAuthentication,
 		UserId: userId,
 	})
 	if err != nil {

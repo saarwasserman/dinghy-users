@@ -33,12 +33,12 @@ var (
 )
 
 type config struct {
-	port int
-	env  string
+	port    int
+	env     string
 	session struct {
 		inactivityTime int
 	}
-	db   struct {
+	db struct {
 		dsn          string
 		maxOpenConns int
 		maxIdleConns int
@@ -50,12 +50,12 @@ type config struct {
 		enabled bool
 	}
 	notificationsService struct {
-		host     string
-		port     int
+		host string
+		port int
 	}
 	authenticationService struct {
-		host	string
-		port	int
+		host string
+		port int
 	}
 	cors struct {
 		trustedOrigins []string
@@ -67,11 +67,11 @@ type config struct {
 
 type application struct {
 	users.UnimplementedUsersServer
-	config config
-	logger *jsonlog.Logger
-	models data.Models
+	config   config
+	logger   *jsonlog.Logger
+	models   data.Models
 	notifier notifications.EMailServiceClient
-	auth auth.AuthenticationClient
+	auth     auth.AuthenticationClient
 }
 
 func main() {
@@ -102,7 +102,6 @@ func main() {
 	// authentication service
 	flag.StringVar(&cfg.authenticationService.host, "authentication-service-host", "localhost", "notifications service host")
 	flag.IntVar(&cfg.authenticationService.port, "authentication-service-port", 40020, "notifications service port")
-
 
 	// cache
 	flag.StringVar(&cfg.cache.endpoint, "cache-endpoint", os.Getenv("CACHE_ENDPOINT"), "Cache Endpoint")
@@ -164,13 +163,13 @@ func main() {
 		return
 	}
 	defer authConn.Close()
-	
+
 	app := &application{
-		config: cfg,
-		logger: logger,
-		models: data.NewModels(db),
+		config:   cfg,
+		logger:   logger,
+		models:   data.NewModels(db),
 		notifier: notifications.NewEMailServiceClient(conn),
-		auth: auth.NewAuthenticationClient(authConn),
+		auth:     auth.NewAuthenticationClient(authConn),
 		//cache: cache,
 	}
 
@@ -183,8 +182,8 @@ func main() {
 	serviceRegistrar := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		// authentication
 		selector.UnaryServerInterceptor(
-	   		middlewareAuth.UnaryServerInterceptor(app.Authenticator),
-	   		selector.MatchFunc(app.AuthMatcher),
+			middlewareAuth.UnaryServerInterceptor(app.Authenticator),
+			selector.MatchFunc(app.AuthMatcher),
 		),
 	))
 
