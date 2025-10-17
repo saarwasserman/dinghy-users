@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -66,9 +65,10 @@ func init() {
 
 	// creates it for the auth service
 	// TODO: move to common test initialization repo
-	dsn := os.Getenv("USERS_DB_DSN")
 
-	db, err := sql.Open("postgres", dsn)
+	// dsn := os.Getenv("USERS_DB_DSN")
+
+	db, err := sql.Open("postgres", "postgres://dinghy-users:dinghy-users@localhost:5432/dinghy-users?sslmode=disable")
 	if err != nil {
 		log.Fatal(err.Error())
 		return

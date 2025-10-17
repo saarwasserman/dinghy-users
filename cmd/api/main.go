@@ -70,7 +70,7 @@ type application struct {
 	config   config
 	logger   *jsonlog.Logger
 	models   data.Models
-	notifier notifications.EMailServiceClient
+	notifier notifications.NotificationsClient
 	auth     auth.AuthenticationClient
 }
 
@@ -168,7 +168,7 @@ func main() {
 		config:   cfg,
 		logger:   logger,
 		models:   data.NewModels(db),
-		notifier: notifications.NewEMailServiceClient(conn),
+		notifier: notifications.NewNotificationsClient(conn),
 		auth:     auth.NewAuthenticationClient(authConn),
 		//cache: cache,
 	}
