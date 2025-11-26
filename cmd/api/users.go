@@ -15,6 +15,16 @@ import (
 	"github.com/saarwasserman/users/protogen/users"
 )
 
+func userToResponse(user *data.User) *users.UserDetailsResponse {
+	return &users.UserDetailsResponse{
+		Id:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		CreatedAt: user.CreatedAt.UnixMilli(),
+		Activated: user.Activated,
+	}
+}
+
 func (app *application) RegisterUser(ctx context.Context, req *users.UserRegisterRequest) (*users.UserDetailsResponse, error) {
 	user := &data.User{
 		Name:      req.Name,
@@ -31,6 +41,7 @@ func (app *application) RegisterUser(ctx context.Context, req *users.UserRegiste
 		return nil, status.Errorf(codes.InvalidArgument, "error %s", v.Errors)
 	}
 
+	// insert user to db
 	err := app.models.Users.Insert(user)
 	if err != nil {
 		switch {
@@ -42,6 +53,7 @@ func (app *application) RegisterUser(ctx context.Context, req *users.UserRegiste
 		}
 	}
 
+	// set initial password
 	_, err = app.auth.SetPassword(ctx, &auth.SetPasswordRequest{
 		UserId:   user.ID,
 		Password: req.Password,
@@ -67,7 +79,7 @@ func (app *application) RegisterUser(ctx context.Context, req *users.UserRegiste
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	_, err = app.notifier.SendActivationEmail(context.Background(), &notifications.SendActivationEmailRequest{
+	_, err = app.notifier.SendActivationEmail(ctx, &notifications.SendActivationEmailRequest{
 		Recipient: user.Email,
 		UserId:    strconv.FormatInt(user.ID, 10),
 		Token:     tokenResponse.TokenPlaintext,
@@ -136,13 +148,7 @@ func (app *application) ActivateUser(ctx context.Context, req *users.UserActivat
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &users.UserDetailsResponse{
-		Id:        user.ID,
-		Email:     user.Email,
-		Name:      user.Name,
-		CreatedAt: user.CreatedAt.UnixMilli(),
-		Activated: user.Activated,
-	}, nil
+	return userToResponse(user), nil
 }
 
 func (app *application) GetUser(ctx context.Context, req *users.UserDetailsRequest) (*users.UserDetailsResponse, error) {
@@ -159,16 +165,11 @@ func (app *application) GetUser(ctx context.Context, req *users.UserDetailsReque
 		}
 	}
 
-	return &users.UserDetailsResponse{
-		Id:        user.ID,
-		Email:     user.Email,
-		Name:      user.Name,
-		CreatedAt: user.CreatedAt.UnixMilli(),
-		Activated: user.Activated,
-	}, nil
+	return userToResponse(user), nil
 }
 
 func (app *application) Login(ctx context.Context, req *users.LoginRequest) (*users.LoginResponse, error) {
+
 	user, err := app.models.Users.GetByEmail(req.Email)
 	if err != nil {
 		app.logger.PrintError(err, nil)
@@ -191,12 +192,15 @@ func (app *application) Login(ctx context.Context, req *users.LoginRequest) (*us
 
 func (app *application) Logout(ctx context.Context, req *users.LogoutRequest) (*users.LogoutResponse, error) {
 
+	// get user id from context
 	userId := app.contextGetUserId(ctx)
 
+	// delete all authentication tokens for user
 	_, err := app.auth.DeleteAllTokensForUser(ctx, &auth.TokensDeletionRequest{
 		Scope:  data.ScopeAuthentication,
 		UserId: userId,
 	})
+
 	if err != nil {
 		app.logger.PrintError(err, nil)
 		return nil, status.Error(codes.Internal, err.Error())
